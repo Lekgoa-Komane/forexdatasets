@@ -17,16 +17,16 @@ paths:
   # Local storage base directories (use absolute paths for reliability)
   local_base: "/run/media/lekgoa/Book 3/Trading/Ascii"
 
-  # SQLite output data directory
-  database_output_base: "/mnt/westerndigital/Programming/Databases"
-
-  # Dukascopy output data path & H1 Historical data start date
-  dukascopy:
-    output: "/run/media/lekgoa/Book 3/Trading/Data/Python/Dukascopy/fx_h1.csv"
+  # Forexengine output data path & SQLite database path
+  forexengine:
+    output_base: "/run/media/lekgoa/Book 3/Trading/Datasets/forexengine"
+    table_names: ["registry", "bos_choch", "reversal_watch"]
+    db_dir: "/run/media/lekgoa/Book 3/Trading/Datasets/forexengine/Databases"
 
   # Base directory for final ETL output directories for extracted data
   # (relative to project root)'
-  output_base: "/run/media/lekgoa/Book 3/Trading/Datasets"
+  forexdataset:
+    output_base: "/run/media/lekgoa/Book 3/Trading/Datasets/forexdatasets"
 
   frequency_folders:
     quarterly: "quarterly"
@@ -322,11 +322,13 @@ analysis:
       name: "London Session"
       standard_time:
         # GMT (Last Sunday October - Last Sunday March)
-        time_range: ['08:00:00', '17:00:00']
+        start: '08:00:00'
+        end: '17:00:00'
         description: "GMT / Winter (BST off)"
       daylight_time:
         # BST (Last Sunday March - Last Sunday October)
-        time_range: ['07:00:00', '16:00:00']
+        start: '07:00:00'
+        end: '16:00:00'
         description: "BST / Summer (BST on)"
       dst_transition_dates:
         start_dst: "last sunday of march"
@@ -334,12 +336,12 @@ analysis:
 
       # Kill Zones within London Session
       kill_zones:
-        - name: "London Open"
+        london_open:
           start: "08:00:00"  # UTC
           end: "11:00:00"    # UTC
           priority: 1
 
-        - name: "London AM Continuation"
+        london_continuation:
           start: "11:00:00"
           end: "14:00:00"
           priority: 2
@@ -349,11 +351,13 @@ analysis:
       name: "New York Session"
       standard_time:
         # EST (First Sunday November - Second Sunday March)
-        time_range: ['13:00:00', '22:00:00']
+        start: '13:00:00'
+        end: '22:00:00'
         description: "EST / Winter (DST off)"
       daylight_time:
         # EDT (Second Sunday March - First Sunday November)
-        time_range: ['12:00:00', '21:00:00']
+        start: '12:00:00'
+        end: '21:00:00'
         description: "EDT / Summer (DST on)"
       dst_transition_dates:
         start_dst: "second sunday of march"
@@ -361,12 +365,12 @@ analysis:
 
       # Kill Zones within New York Session
       kill_zones:
-        - name: "NY Open"
+        ny_open:
           start: "13:00:00"  # UTC
           end: "16:00:00"    # UTC
           priority: 1
 
-        - name: "NY AM Continuation"
+        ny_continuation:
           start: "16:00:00"
           end: "19:00:00"
           priority: 2
@@ -452,18 +456,12 @@ paper_trading:
 # ==============================================================================
 
 database:
-  db_dir: "/run/media/lekgoa/Book 3/Programming Projects/R-Projects/Databases"
   db_suffix: ".sqlite"
 
   # SQL table prefixes for different timeframes (e.g., "h1_audusd" for hourly)
   table_prefixes:
-    market_data: "candles"
-    registry: "registry"
-    dol_table: "dol"
     journal: "trading_journal"
     paper_trade: "paper_trading"
-    cot: "cot_report"
-    reversal: "reversal_watch"
 
   # Indexes to create for faster queries
   index_column: ["date", "ticker"]

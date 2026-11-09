@@ -19,7 +19,6 @@
 #' @importFrom fs file_exists dir_exists
 #' @importFrom yaml read_yaml
 #' @importFrom logger log_error log_info skip_formatter
-#' @export
 #
 #' @examples
 #' \dontrun{
@@ -37,7 +36,7 @@
 #'   }
 #' }
 #'
-#' @seealso \code{\link[yaml]{read_yaml}}, \code{\link[fs]{file_exists}}, 
+#' @seealso \code{\link[yaml]{read_yaml}}, \code{\link[fs]{file_exists}},
 #' \code{\link[fs]{dir_exists}}, \code{\link[logger]{log_error}}
 #'
 #' @note This function is designed to be called at the start of your ETL
@@ -125,8 +124,8 @@ load_config <- function(
   # 2. Validate paths section (critical for local data access)
   required_paths <- c(
     "local_base",
-    "database_output_base",
-    "output_base",
+    "forexengine",
+    "forexdataset",
     "frequency_folders",
     "file_suffixes",
     "subfolder"
@@ -206,7 +205,7 @@ load_config <- function(
     )
   ) {
     log_error(
-      skip_formatter("web$daily_url_pattern must contain {ticker} placeholder")
+      skip_formatter("web$stooq$url_pattern must contain {ticker} placeholder")
     )
     stop(
       "Invalid web URL pattern: missing {ticker} placeholder"
@@ -676,14 +675,14 @@ ticker_metadata <- function(config) {
 
             dt[,
               data_source := fcase(
-                type == "stooq"           ,
-                "stooq"                   ,
-                type == "investing"       ,
-                "investing"               ,
-                type == "local_stooq"     ,
-                "local_stooq"             ,
-                type == "local_investing" ,
-                "local_investing"         ,
+                type == "stooq",
+                "stooq",
+                type == "investing",
+                "investing",
+                type == "local_stooq",
+                "local_stooq",
+                type == "local_investing",
+                "local_investing",
                 default = NA_character_
               )
             ]

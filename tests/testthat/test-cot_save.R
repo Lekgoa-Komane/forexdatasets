@@ -7,8 +7,16 @@ library(data.table)
 make_cot_dt <- function() {
   # Deliberately NOT sorted by date
   data.table(
-    Market_and_Exchange_Names = c("EURO FX (EUR)", "EURO FX (EUR)", "GOLD (XAU)"),
-    Report_Date_as_YYYY_MM_DD = as.Date(c("2024-01-09", "2024-01-02", "2024-01-02")),
+    Market_and_Exchange_Names = c(
+      "EURO FX (EUR)",
+      "EURO FX (EUR)",
+      "GOLD (XAU)"
+    ),
+    Report_Date_as_YYYY_MM_DD = as.Date(c(
+      "2024-01-09",
+      "2024-01-02",
+      "2024-01-02"
+    )),
     Source_Year = 2024L,
     Open_Interest = c(100, 110, 120)
   )
@@ -23,7 +31,7 @@ test_that("build_cot_path uses the cot folder by default", {
 
   expect_equal(
     build_cot_path(config, "legacy"),
-    file.path(config$paths$output_base, "cot", "legacy.parquet")
+    file.path(config$paths$forexdataset$output_base, "cot", "legacy.parquet")
   )
 })
 
@@ -33,7 +41,11 @@ test_that("build_cot_path honours a custom folder and handles several reports", 
 
   expect_equal(
     build_cot_path(config, c("legacy", "tff")),
-    file.path(config$paths$output_base, "positioning", c("legacy.parquet", "tff.parquet"))
+    file.path(
+      config$paths$forexdataset$output_base,
+      "positioning",
+      c("legacy.parquet", "tff.parquet")
+    )
   )
 })
 
@@ -45,8 +57,8 @@ test_that("build_cot_path refuses bad input", {
   expect_error(build_cot_path(config, character()), "non-empty text")
   expect_error(build_cot_path(config, 1), "non-empty text")
 
-  config$paths$output_base <- NULL
-  expect_error(build_cot_path(config, "legacy"), "paths\\$output_base")
+  config$paths$forexdataset$output_base <- NULL
+  expect_error(build_cot_path(config, "legacy"), "paths\\$forexdataset\\$output_base")
 })
 
 # ---------------------------------------------------------------------------
@@ -108,9 +120,9 @@ test_that("save_cot_dataset skips an empty report and never overwrites a saved f
   )
 
   kept <- data.table::as.data.table(arrow::read_parquet(legacy_path))
-  expect_equal(nrow(kept), 3)                                  # untouched
-  expect_true(file.exists(build_cot_path(config, "tff")))      # written
-  expect_false(file.exists(build_cot_path(config, "other")))   # never created
+  expect_equal(nrow(kept), 3) # untouched
+  expect_true(file.exists(build_cot_path(config, "tff"))) # written
+  expect_false(file.exists(build_cot_path(config, "other"))) # never created
 })
 
 test_that("save_cot_dataset refuses bad input", {
@@ -118,7 +130,10 @@ test_that("save_cot_dataset refuses bad input", {
 
   expect_error(save_cot_dataset(make_cot_dt(), config), "non-empty named list")
   expect_error(save_cot_dataset(list(), config), "non-empty named list")
-  expect_error(save_cot_dataset(list(make_cot_dt()), config), "unique, non-empty name")
+  expect_error(
+    save_cot_dataset(list(make_cot_dt()), config),
+    "unique, non-empty name"
+  )
   expect_error(
     save_cot_dataset(list(a = make_cot_dt(), a = make_cot_dt()), config),
     "unique, non-empty name"
@@ -134,7 +149,9 @@ test_that("save_cot_dataset refuses bad input", {
     "missing column `Report_Date_as_YYYY_MM_DD`"
   )
 
-  text_date <- make_cot_dt()[, Report_Date_as_YYYY_MM_DD := as.character(Report_Date_as_YYYY_MM_DD)]
+  text_date <- make_cot_dt()[,
+    Report_Date_as_YYYY_MM_DD := as.character(Report_Date_as_YYYY_MM_DD)
+  ]
   expect_error(
     save_cot_dataset(list(legacy = text_date), config),
     "must be a Date"
@@ -143,10 +160,13 @@ test_that("save_cot_dataset refuses bad input", {
 
 test_that("save_cot_dataset stops before writing anything when the config is incomplete", {
   config <- make_valid_config()
-  base <- config$paths$output_base
-  config$paths$output_base <- NULL
+  base <- config$paths$forexdataset$output_base
+  config$paths$forexdataset$output_base <- NULL
 
-  expect_error(save_cot_dataset(list(legacy = make_cot_dt()), config), "paths\\$output_base")
+  expect_error(
+    save_cot_dataset(list(legacy = make_cot_dt()), config),
+    "paths\\$forexdataset\\$output_base"
+  )
   expect_false(dir.exists(file.path(base, "cot")))
 })
 

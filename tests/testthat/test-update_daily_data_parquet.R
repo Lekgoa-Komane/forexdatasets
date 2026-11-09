@@ -323,7 +323,7 @@ test_that("transform_daily rejects a config with missing sections", {
   input <- make_daily_input("2020-01-06", 1.2010)
 
   config <- make_valid_config()
-  config$paths$output_base <- NULL
+  config$paths$forexdataset$output_base <- NULL
 
   expect_error(
     update_daily_data(input, config),

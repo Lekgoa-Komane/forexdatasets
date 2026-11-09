@@ -392,19 +392,19 @@ extract_local_daily <- function(
         dt <- dt[date_time >= as.POSIXct("1985-01-01", tz = "UTC")]
 
         dt <- dt[, .(
-        date_time,
-        open,
-        high,
-        low,
-        close,
-        timeframe, 
-        volume,
-        open_interest,
-        ticker,
-        asset_class
-      )]
+          date_time,
+          open,
+          high,
+          low,
+          close,
+          timeframe,
+          volume,
+          open_interest,
+          ticker,
+          asset_class
+        )]
 
-      log_info(
+        log_info(
           "Loaded {ticker} (local): {n} rows",
           ticker = ticker,
           n = format(
@@ -459,28 +459,28 @@ web_scraper <- function(ticker, asset_class, data_source, url_path, config) {
     url = url_path
   )
 
-  url_name <- switch(
+  col_names <- switch(
     data_source,
-    "stooq" = names(config$web)[1],
-    "investing" = names(config$web)[3]
+    "stooq" = config$data_format$stooq_daily,
+    "investing" = config$data_format$investing_daily
   )
 
   css <- switch(
     data_source,
-    "stooq" = config$web[[url_name]]$table_id,
-    "investing" = config$web[[url_name]]$table_id
+    "stooq" = config$web[[data_source]]$table_id,
+    "investing" = config$web[[data_source]]$table_id
   )
 
   # 1. Prepare File Path
   file_path <- file.path(
     config$paths$local_base,
-    config$directory_map$Commodity_Futures$daily[[url_name]],
+    config$directory_map$Commodity_Futures$daily[[data_source]],
     paste0(ticker, config$data_format$fut_extension)
   )
 
   # ---------- 1. Use polite session for robots.txt ----------
   session <- polite::bow(
-    url = config$web[[url_name]]$base_url,
+    url = config$web[[data_source]]$base_url,
     user_agent = config$web$user_agent[1], # e.g. "Googlebot/2.1"
     force = FALSE,
     delay = 10
@@ -564,7 +564,7 @@ web_scraper <- function(ticker, asset_class, data_source, url_path, config) {
       # ---------- 3. Parse exactly as before ----------
       raw_data <- data.table::setDT(
         rvest::read_html(table_html) |>
-          rvest::html_element(xpath = config$web[[url_name]]$x_path) |>
+          rvest::html_element(xpath = config$web[[data_source]]$x_path) |>
           rvest::html_table(header = TRUE)
       )
 

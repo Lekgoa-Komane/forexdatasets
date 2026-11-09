@@ -20,7 +20,7 @@
 #   config <- load_config()
 #
 #   # 1. Dry run: lists what it found, writes nothing
-#   old_base <- file.path(config$paths$output_base, "Python")
+#   old_base <- file.path(config$paths$forexdataset$output_base, "Python")
 #   migrate_csv_to_parquet(config, old_base, timeframes = "daily")
 #
 #   # 2. The real move

@@ -314,7 +314,7 @@ test_that("update_h1_data rejects a config with missing sections", {
   )
 
   config_no_output <- make_valid_config()
-  config_no_output$paths$output_base <- NULL
+  config_no_output$paths$forexdataset$output_base <- NULL
   expect_error(
     update_h1_data(input, config_no_output),
     "config missing required sections"

@@ -4,7 +4,7 @@
 \name{forexdatasets-package}
 \alias{forexdatasets}
 \alias{forexdatasets-package}
-\title{forexdatasets: Fetch, Store and Serve Forex Price Data}
+\title{forexengine: Fetch, Store and Serve Forex Price Data}
 \description{
 The "pantry" of the trading system. It fetches raw price data, stores it as
 parquet files (one file per ticker, one folder per timeframe), and serves it

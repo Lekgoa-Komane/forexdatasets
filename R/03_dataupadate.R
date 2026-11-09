@@ -8,7 +8,7 @@
 #'   columns: `date_time` (POSIXct, UTC), `open`, `high`, `low`, `close`,
 #'   `timeframe`, `ticker`, `asset_class`.
 #' @param config Validated pipeline configuration list from `load_config()`.
-#'   Must contain `transformation`, `paths$output_base`,
+#'   Must contain `transformation`, `paths$forexdataset$output_base`,
 #'   `paths$frequency_folders`, `paths$subfolder`, and related keys.
 #'
 #' @return A `data.table` with columns:
@@ -83,12 +83,12 @@ update_h1_data <- function(
   if (
     is.null(config$transformation) ||
       is.null(
-        config$paths$output_base
+        config$paths$forexdataset$output_base
       )
   ) {
     stop(
       "config missing required sections: 'transformation' or
-      'paths$output_base'"
+      'paths$forexdataset$output_base'"
     )
   }
 
@@ -144,115 +144,6 @@ update_h1_data <- function(
   existing_paths <- groups[,
     file_path := build_data_path(config, unique(timeframe), asset_class, ticker)
   ]
-
-  # # ----------------------------------------------------------------------------
-  # # PRECOMPUTE pip_val
-  # # ----------------------------------------------------------------------------
-  # log_info(
-  #   "Precomputing pip_val for {n} unique tickers based on config regex pattern",
-  #   n = length(unique(hourly_table$ticker))
-  # )
-  # # Precompute pip_val for ALL rows in ONE vectorized step
-  # pip_cfg <- config$transformation$pip_factor
-  # pip_pattern_raw <- pip_cfg$regex_pattern
-  # pip_match_val <- pip_cfg$value_for_match %||%
-  #   0.001
-  # pip_default_val <- pip_cfg$default_value %||%
-  #   0.00001
-  #
-  # # Determine if pattern matching is actually needed
-  # # Check for NULL, empty string, or non-string pattern
-  # is_pattern_active <- !is.null(
-  #   pip_pattern_raw
-  # ) &&
-  #   is.character(pip_pattern_raw) &&
-  #   nchar(pip_pattern_raw) > 0
-  #
-  # # Initialize ticker_lookup. It will be NULL if no pattern is active,
-  # # or a data.table if a pattern is active.
-  # ticker_lookup <- NULL
-  #
-  # if (is_pattern_active) {
-  #   # VALIDATE REGEX once
-  #   if (
-  #     inherits(
-  #       tryCatch(
-  #         {
-  #           suppressWarnings(grepl(
-  #             pip_pattern_raw,
-  #             "",
-  #             ignore.case = TRUE
-  #           ))
-  #         },
-  #         error = function(e) e
-  #       ),
-  #       "error"
-  #     )
-  #   ) {
-  #     stop(
-  #       "Invalid pip_factor regex pattern: '",
-  #       pip_pattern_raw,
-  #       "'",
-  #       call. = FALSE
-  #     )
-  #   }
-  #   # Prepend (?i) for case-insensitive matching with %like%
-  #   pip_pattern_for_like <- paste0(
-  #     "(?i)",
-  #     pip_pattern_raw
-  #   )
-  #
-  #   # 1. Precompute pip_val mapping for UNIQUE tickers ONLY
-  #   # Get unique tickers from hourly_table (only once, before any loops)
-  #   # Note: We create this based on hourly_table's tickers. Assuming
-  #   # existing_data will
-  #   # have a subset or superset of these, but applying this lookup is fine.
-  #   # If existing_data contains tickers *not* in hourly_table, they would fall
-  #   # through to the default value unless specifically added to this lookup.
-  #   # For robustness, we could consider all unique tickers across both initial
-  #   # hourly_table AND all existing files, but that adds complexity for
-  #   # little gain here.
-  #   unique_all_tickers <- unique(c(
-  #     hourly_table$ticker,
-  #     existing_paths$ticker
-  #   )) # More robust to get ALL possible tickers
-  #
-  #   ticker_lookup <- data.table(
-  #     ticker = unique_all_tickers
-  #   )[,
-  #     calculated_pip_val := fifelse(
-  #       ticker %like%
-  #         pip_pattern_for_like,
-  #       pip_match_val,
-  #       pip_default_val
-  #     )
-  #   ]
-  #   data.table::setkey(ticker_lookup, ticker) # Key for efficient joins
-  # }
-  #
-  # # 2. Apply to hourly_table using fast join or default value
-  # if (!is.null(ticker_lookup)) {
-  #   hourly_table[
-  #     ticker_lookup,
-  #     on = "ticker",
-  #     pip_conv := i.calculated_pip_val
-  #   ]
-  # } else {
-  #   hourly_table[,
-  #     pip_conv := pip_default_val
-  #   ] # All get default if no pattern
-  # }
-  #
-  # hourly_table <- hourly_table[, .(
-  #   date_time,
-  #   open,
-  #   high,
-  #   low,
-  #   close,
-  #   pip_conv,
-  #   ticker,
-  #   asset_class
-  # )]
 
   # ------------------------------------------------------------------------
   # LOAD EXISTING DATA (IF FILE EXISTS - VECTTORISED CHECK)
@@ -390,19 +281,6 @@ update_h1_data <- function(
   # ------------------------------------------------------------------------
   # ENSURE EXISTING DATA HAS ALL REQUIRED COLS
   # ------------------------------------------------------------------------
-  # if (nrow(existing_all)) {
-  #   # Add missing columns to existing data
-  #   missing_in_existing <- setdiff(
-  #     required_cols,
-  #     names(existing_all)
-  #   )
-  #   if (length(missing_in_existing) > 0) {
-  #     existing_all[,
-  #       (missing_in_existing) := ""
-  #     ]
-  #   }
-  # }
-
   existing_all <- existing_all[, ..required_cols]
 
   data.table::setkeyv(
@@ -455,61 +333,6 @@ update_h1_data <- function(
     )
     return(existing_all) # or return existing_all (if non-empty)
   }
-
-  # Prepare new_records for metric calculation
-  # (We already have pip_val precomputed)
-
-  # # -------------------------------------------------------------------------
-  # # TIME-SERIES CONTINUITY: Need LAST existing close per group
-  # # -------------------------------------------------------------------------
-  # log_info(
-  #   paste0(
-  #     "Pre-calculating last existing close for groups with history to ",
-  #     "ensure time-series continuity"
-  #   )
-  # )
-  #
-  # # Prealculate last existing close for groups WITH history
-  # last_close_per_group <- if (nrow(existing_all)) {
-  #   existing_all[,
-  #     .(last_close = close[.N]), # last close per group
-  #     by = .(asset_class, ticker)
-  #   ]
-  # } else {
-  #   last_close_per_group <- data.table(
-  #     asset_class = character(),
-  #     ticker = character(),
-  #     last_close = numeric()
-  #   )
-  # }
-  #
-  # # Join last_close into NEW records
-  # new_records <- new_records[
-  #   last_close_per_group,
-  #   on = .(asset_class, ticker),
-  #   last_close := i.last_close,
-  #   mult = "first"
-  # ] # take first match (if any)
-  #
-  # # -------------------------------------------------------------------------
-  # # VECTORIZED METRIC COMPUTATION ON NEW RECORDS (by-group)
-  # # -------------------------------------------------------------------------
-  # log_info(
-  #   "Computing metrics for new records across {n} tickers with vectorized operations",
-  #   n = length(unique(new_records$ticker))
-  # )
-  #
-  # new_records[,
-  #   `:=`(
-  #     timeframe = tolower(freq_folder)
-  #   ),
-  #   by = .(asset_class, ticker)
-  # ]
-  #
-  # log_info(
-  #   "Completed metric computation for new records across {n} tickers",
-  #   n = length(unique(new_records$ticker))
-  # )
 
   # ============================================================================
   # STEP 5: MERGE AND FINAL CLEAN (SINGLE COMPREHENSIVE CLEAN)
@@ -571,7 +394,7 @@ update_h1_data <- function(
 #'   `date_time`, `open`, `high`, `low`, `close`, `volume`, `open_interest`,
 #'   `timeframe`, `ticker`, `asset_class`.
 #' @param config A validated configuration list from `load_config()`.
-#'   Must contain `paths$output_base`, `paths$frequency_folders`,
+#'   Must contain `paths$forexdataset$output_base`, `paths$frequency_folders`,
 #'   `paths$subfolder`, and related keys.
 #'
 #' @return A `data.table` with columns:
@@ -648,11 +471,11 @@ update_daily_data <- function(
 
   if (
     is.null(
-      config$paths$output_base
+      config$paths$forexdataset$output_base
     )
   ) {
     stop(
-      "config missing required sections: 'paths$output_base'"
+      "config missing required sections: 'paths$forexdataset$output_base'"
     )
   }
 
@@ -849,19 +672,6 @@ update_daily_data <- function(
   # ----------------------------------------------------------------------------
   existing_all <- existing_all[, ..required_cols]
 
-  # if (nrow(existing_all)) {
-  #   # Add missing columns to existing data
-  #   missing_in_existing <- setdiff(
-  #     required_cols,
-  #     names(existing_all)
-  #   )
-  #   if (length(missing_in_existing) > 0) {
-  #     existing_all[,
-  #       (missing_in_existing) := ""
-  #     ]
-  #   }
-  # }
-
   data.table::setkeyv(
     existing_all,
     c(
@@ -880,7 +690,7 @@ update_daily_data <- function(
   )
 
   # =========================================================================
-  # STEP 4: GLOBAL ANTI-JOIN: Flag NEW records in ONE step
+  # STEP 3: GLOBAL ANTI-JOIN: Flag NEW records in ONE step
   # =========================================================================
   log_info(
     "Performing global anti-join to identify new records across {n} tickers",
@@ -913,128 +723,8 @@ update_daily_data <- function(
     return(existing_all) # or return existing_all (if non-empty)
   }
 
-  # # -------------------------------------------------------------------------
-  # # TIME-SERIES CONTINUITY: Need LAST existing close per group
-  # # -------------------------------------------------------------------------
-  # log_info(
-  #   paste0(
-  #     "Pre-calculating last existing close for groups with history to ",
-  #     "ensure time-series continuity"
-  #   )
-  # )
-  #
-  # # Pre-calculate last exiing close for groups WITH history
-  # last_close_per_group <- if (nrow(existing_all)) {
-  #   existing_all[,
-  #     .(last_close = close[.N]), # last close per group
-  #     by = .(asset_class, ticker)
-  #   ]
-  # } else {
-  #   last_close_per_group <- data.table(
-  #     asset_class = character(),
-  #     ticker = character(),
-  #     last_close = numeric()
-  #   )
-  # }
-  #
-  # # Join last_close into NEW records
-  # new_records <- new_records[
-  #   last_close_per_group,
-  #   on = .(asset_class, ticker),
-  #   last_close := i.last_close,
-  #   mult = "first"
-  # ] # take first match (if any)
-  #
-  # # -------------------------------------------------------------------------
-  # # VECTORIZED METRIC COMPUTATION ON NEW RECORDS (by-group)
-  # # -------------------------------------------------------------------------
-  # log_info(
-  #   "Computing metrics for new records across {n} tickers with vectorized operations",
-  #   n = length(unique(new_records$ticker))
-  # )
-  #
-  # new_records[,
-  #   `:=`(
-  #     volume = as.integer(volume),
-  #     open_interest = as.integer(
-  #       open_interest
-  #     ),
-  #     # Handle intra-candle log return safely
-  #     body_return = signif(
-  #       log(
-  #         pmax(close, double_xmin) /
-  #           pmax(open, double_xmin)
-  #       ) *
-  #         100,
-  #       4
-  #     ),
-  #
-  #     # Handle intra-candle volatility safely
-  #     volatility = signif(
-  #       log(
-  #         pmax(high, double_xmin) /
-  #           pmax(low, double_xmin)
-  #       ) *
-  #         100,
-  #       4
-  #     ),
-  #
-  #     # Time-series log_return: Correctly handles continuity
-  #     daily_return = fifelse(
-  #       # Case 1: First new record in this group AND there was existing history.
-  #       # Its return is calculated against the last historical close.
-  #       !is.na(last_close) & .I == 1L,
-  #       signif(
-  #         log(
-  #           pmax(close, double_xmin) /
-  #             pmax(
-  #               last_close,
-  #               double_xmin
-  #             )
-  #         ) *
-  #           100,
-  #         4
-  #       ),
-  #
-  #       # Case 2: Any other record (subsequent new records, or first
-  #       # new record with no history).
-  #       # Its return is calculated against the previous record within the
-  #       # *new_records* series itself.
-  #       # 'TRUE' acts as the default catch-all.
-  #       signif(
-  #         log(
-  #           pmax(close, double_xmin) /
-  #             pmax(
-  #               shift(close, 1),
-  #               double_xmin
-  #             )
-  #         ) *
-  #           100,
-  #         4
-  #       )
-  #     )
-  #   ),
-  #   by = .(asset_class, ticker)
-  # ]
-  #
-  # new_records[,
-  #   `:=`(
-  #     body_ratio = signif(
-  #       (abs(body_return) / volatility),
-  #       4
-  #     ),
-  #     timeframe = tolower(freq_folder)
-  #   ),
-  #   by = .(asset_class, ticker)
-  # ]
-  #
-  # log_info(
-  #   "Completed metric computation for new records across {n} tickers.",
-  #   n = length(unique(new_records$ticker))
-  # )
-
   # ============================================================================
-  # STEP 5: MERGE AND FINAL CLEAN (SINGLE COMPREHENSIVE CLEAN)
+  # STEP 4: MERGE AND FINAL CLEAN (SINGLE COMPREHENSIVE CLEAN)
   # ============================================================================
   log_info(
     paste0(
@@ -1902,19 +1592,17 @@ aggregate_daily_to_monthly <- function(
           low = min(low),
           close = last(close),
           volume = sum(volume),
-          open_interest = last(
-            open_interest
-          )
+          open_interest = last(open_interest)
         ),
         by = .(
           ticker,
           asset_class,
           date_time = fcase(
-            lubridate::wday(floor_date(date_time, unit = mnt)) == 1 ,
-            floor_date(date_time, unit = mnt) + days(1)             ,
-            lubridate::wday(floor_date(date_time, unit = mnt)) == 7 ,
-            floor_date(date_time, unit = mnt) + days(2)             ,
-            default = floor_date(date_time, unit = mnt)
+            lubridate::wday(floor_date(date_time, unit = mnt)) == 1,
+            floor_date(date_time, unit = mnt) + days(1),
+            lubridate::wday(floor_date(date_time, unit = mnt)) == 7,
+            floor_date(date_time, unit = mnt) + days(2),
+            default = floor_date(date_time)
           )
         )
       ][, timeframe := freq_folder]
@@ -2195,19 +1883,17 @@ aggregate_daily_to_quarterly <- function(
           low = min(low),
           close = last(close),
           volume = sum(volume),
-          open_interest = last(
-            open_interest
-          )
+          open_interest = last(open_interest)
         ),
         by = .(
           ticker,
           asset_class,
           date_time = fcase(
-            lubridate::wday(floor_date(date_time, unit = qrt)) == 1 ,
-            floor_date(date_time, unit = qrt) + days(1)             ,
-            lubridate::wday(floor_date(date_time, unit = qrt)) == 7 ,
-            floor_date(date_time, unit = qrt) + days(2)             ,
-            default = floor_date(date_time, unit = qrt)
+            lubridate::wday(floor_date(date_time, unit = qrt)) == 1,
+            floor_date(date_time, unit = qrt) + days(1),
+            lubridate::wday(floor_date(date_time, unit = qrt)) == 7,
+            floor_date(date_time, unit = qrt) + days(2),
+            default = floor_date(date_time)
           )
         )
       ][, timeframe := freq_folder]

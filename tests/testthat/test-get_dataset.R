@@ -179,7 +179,10 @@ test_that("get_dataset explains a missing folder, an empty folder and an unknown
 
   # the folder exists but holds no parquet files
   dir.create(
-    file.path(config$paths$output_base, config$paths$frequency_folders$weekly),
+    file.path(
+      config$paths$forexdataset$output_base,
+      config$paths$frequency_folders$weekly
+    ),
     recursive = TRUE
   )
   expect_error(get_dataset("weekly", config = config), "No parquet files found")
@@ -224,9 +227,9 @@ test_that("get_dataset refuses bad arguments", {
 
 test_that("get_dataset stops when the config has no output folder", {
   config <- make_pantry(make_valid_config())
-  config$paths$output_base <- NULL
+  config$paths$forexdataset$output_base <- NULL
 
-  expect_error(get_dataset("daily", config = config), "paths\\$output_base")
+  expect_error(get_dataset("daily", config = config), "paths\\$forexdataset\\$output_base")
 })
 
 test_that("get_dataset gives back what save_dataset saved", {
@@ -359,7 +362,7 @@ test_that("get_dataset uses 'have' when several asset classes have no data", {
 test_that("get_dataset reports an asset-class folder that exists but holds no files", {
   config <- make_pantry(make_valid_config())
   dir.create(file.path(
-    config$paths$output_base,
+    config$paths$forexdataset$output_base,
     config$paths$frequency_folders$daily,
     "Commodity_Futures"
   ))
@@ -437,7 +440,7 @@ test_that("get_dataset stops when asset-class folders exist but hold no parquet 
   # Asset-class folder exists for the timeframe, but holds no *_d.parquet
   # files, so `found` is empty even though `all_classes` is not.
   class_dir <- file.path(
-    config$paths$output_base,
+    config$paths$forexdataset$output_base,
     config$paths$frequency_folders$daily,
     "Currency_Pairs"
   )

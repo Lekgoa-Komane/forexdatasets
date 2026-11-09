@@ -2,7 +2,7 @@
 make_mock_path_config <- function() {
   list(
     paths = list(
-      output_base = "/mock/base",
+      forexdataset = list(output_base = "/mock/base"),
       frequency_folders = list(
         daily = "daily_folder",
         h1 = "hourly_folder"
@@ -73,11 +73,11 @@ test_that("build_data_path rejects NA values in asset_class or ticker", {
 
 test_that("build_data_path errors when config lacks output_base", {
   config <- make_mock_path_config()
-  config$paths$output_base <- NULL # Strip out base path
+  config$paths$forexdataset$output_base <- NULL # Strip out base path
 
   expect_error(
     build_data_path(config, "daily", "Currency_Pairs", "audcad"),
-    regexp = "Config is missing `paths\\$output_base`"
+    regexp = "Config is missing `paths\\$forexdataset\\$output_base`"
   )
 })
 

@@ -2,18 +2,24 @@
 
 make_valid_config <- function() {
   local_base <- tempfile("local_base")
-  database_output_base <- tempfile("db_output")
-  output_base <- tempfile("parquet_output")
+  forexdataset_base <- tempfile("forexdatasets")
+  forexengine_base <- tempfile("forexengine")
+  db_dir <- file.path(forexengine_base, "Databases")
 
   dir.create(local_base, recursive = TRUE)
-  dir.create(database_output_base, recursive = TRUE)
-  dir.create(output_base, recursive = TRUE)
+  dir.create(forexdataset_base, recursive = TRUE)
+  dir.create(forexengine_base, recursive = TRUE)
+  dir.create(db_dir, recursive = TRUE)
 
   list(
     paths = list(
       local_base = local_base,
-      database_output_base = database_output_base,
-      output_base = output_base,
+      forexengine = list(
+        output_base = forexengine_base,
+        table_names = c("registry", "bos_choch", "reversal_watch"),
+        db_dir = db_dir
+      ),
+      forexdataset = list(output_base = forexdataset_base),
       frequency_folders = list(
         h1 = "h1",
         daily = "daily",
@@ -201,12 +207,8 @@ make_valid_config <- function() {
       )
     ),
     database = list(
-      db_dir = database_output_base, # <-- must exist
       db_suffix = ".sqlite",
       table_prefixes = list(
-        market_data = "candles",
-        registry = "registry",
-        dol_table = "dol",
         journal = "trading_journal",
         paper_trade = "paper_trading"
       )

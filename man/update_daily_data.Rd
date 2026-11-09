@@ -12,7 +12,7 @@ update_daily_data(daily_table, config)
 \code{timeframe}, \code{ticker}, \code{asset_class}.}
 
 \item{config}{A validated configuration list from \code{load_config()}.
-Must contain \code{paths$output_base}, \code{paths$frequency_folders},
+Must contain \code{paths$forexdataset$output_base}, \code{paths$frequency_folders},
 \code{paths$subfolder}, and related keys.}
 }
 \value{

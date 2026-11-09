@@ -12,7 +12,7 @@ columns: \code{date_time} (POSIXct, UTC), \code{open}, \code{high}, \code{low}, 
 \code{timeframe}, \code{ticker}, \code{asset_class}.}
 
 \item{config}{Validated pipeline configuration list from \code{load_config()}.
-Must contain \code{transformation}, \code{paths$output_base},
+Must contain \code{transformation}, \code{paths$forexdataset$output_base},
 \code{paths$frequency_folders}, \code{paths$subfolder}, and related keys.}
 }
 \value{
