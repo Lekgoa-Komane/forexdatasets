@@ -1,0 +1,33 @@
+Package: forexdatasets
+Title: Fetch, Store and Serve Forex Price Data and C.O.T report
+Version: 0.0.0.9000
+Authors@R: 
+    person("Lekgoa", "Komane", , "lionel.komane@gmail.com", role = c("aut", "cre"))
+Description: Keeps forex price data (H1, H4, daily, weekly, monthly and
+    quarterly) and cot_report as parquet files, one file per ticker, and serves it
+    quickly to other packages. For personal use.
+License: MIT + file LICENSE
+Depends:
+    R (>= 4.4.0)
+Imports:
+    arrow,
+    chromote,
+    data.table,
+    fs,
+    logger,
+    lubridate,
+    polite,
+    rlang,
+    robotstxt,
+    rvest,
+    tidyselect,
+    utils,
+    yaml
+Suggests: 
+    testthat (>= 3.0.0),
+    withr,
+    zip
+Config/roxygen2/version: 8.1.1
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)

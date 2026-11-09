@@ -1,0 +1,503 @@
+# ==============================================================================
+# CONFIGURATION FOR DATA EXTRACTION, TRANSFOMATION & LOADING PIPELINE
+# ==============================================================================
+
+default:
+  # Project Name
+  project_name: "Data ETL Pipeline"
+
+  # Environment: "dev", "test", "prod"
+  environment: "dev"
+
+# ==============================================================================
+# PATH CONFIGURATION
+# ==============================================================================
+
+paths:
+  # Local storage base directories (use absolute paths for reliability)
+  local_base: "/run/media/lekgoa/Book 3/Trading/Ascii"
+
+  # SQLite output data directory
+  database_output_base: "/mnt/westerndigital/Programming/Databases"
+
+  # Dukascopy output data path & H1 Historical data start date
+  dukascopy:
+    output: "/run/media/lekgoa/Book 3/Trading/Data/Python/Dukascopy/fx_h1.csv"
+
+  # Base directory for final ETL output directories for extracted data
+  # (relative to project root)'
+  output_base: "/run/media/lekgoa/Book 3/Trading/Datasets"
+
+  frequency_folders:
+    quarterly: "quarterly"
+    monthly: "monthly"
+    weekly: "weekly"
+    daily: "daily"
+    h4: "h4"
+    h1: "h1"
+
+  file_suffixes:
+    quarterly: "q"
+    monthly: "m"
+    weekly: "w"
+    daily: "d"
+    h4: "h4"
+    h1: "h1"
+
+  subfolder: "csv"
+
+# ==============================================================================
+# WEB SCRAPING CONFIGURATION'
+# ==============================================================================
+
+web:
+  stooq:
+    base_url: "https://stooq.com"
+    polite_path: "/q/d/?s="
+    # {ticker} will be replaced by the actual ticker (e.g., a6.f)
+    url_pattern: "https://stooq.com/q/d/?s={ticker}"
+    x_path: "//*[@id='fth1']"
+    table_id: "#fth1"  # The HTML table ID on stooq.com
+
+  user_agent:
+    - "Googlebot"
+    - "Bingbot"
+
+  investing:
+    base_url: "https://www.investing.com"
+    url_pattern: "https://www.investing.com/{asset_class}/{ticker}-historical-data"
+    x_path: "//*[@id='__next']/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/table"
+    table_id: "table.freeze-column-w-1.w-full.overflow-x-auto.text-xs.leading-4"
+
+  cftc:
+    url: "https://www.cftc.gov/files/dea/history/"
+
+  # Rate limiting (be respectful to the server)'
+  delay_between_requests: 60  # seconds'
+
+  # Timeout for requests'
+  timeout: 30  # seconds'
+
+  poll_interval: 0.5
+
+# ==============================================================================
+# ASSET CLASS DEFINITIONS'
+# ==============================================================================
+
+asset_classes:
+  # List all asset classes'
+  names:
+    - "Commodity_Futures"
+    - "Currency_Futures"
+    - "Currency_Indices"
+    - "Currency_Pairs"
+    - "Metals"
+    - "Yields"
+
+  Commodity_Futures:
+    source: ["stooq", "investing", "local"]
+    frequencies: ["daily"]
+    tickers: ["cb.f", "gc.f", "pa.f", "pl.f", "si.f"]
+    investing_tickers:
+     - "brent-oil"
+     - "gold"
+     - "palladium"
+     - "platinum"
+     - "silver"
+
+  Currency_Futures:
+    source: ["stooq", "investing", "local"]
+    frequencies: ["daily"]
+    tickers: ["a6.f", "b6.f", "d6.f", "dx.f", "e6.f", "j6.f", "n6.f", "s6.f"]
+    investing_tickers:
+     - "aud-futures"
+     - "gbp-futures"
+     - "cad-futures"
+     - "us-dollar-index"
+     - "eur-futures"
+     - "jpy-futures"
+     - "new-zealand-dollar-futures"
+     - "chf-futures"
+
+  Currency_Indices:
+    source: "local"
+    frequencies: ["daily", "hourly"]
+    tickers: ["aud_i", "cad_i", "chf_i", "eur_i",
+              "gbp_i", "jpy_i", "nzd_i", "usd_i"]
+
+  Currency_Pairs:
+    source: "local"
+    frequencies: ["daily", "hourly"]
+    tickers: ["audcad", "audchf", "audjpy", "audnzd",
+              "audusd", "cadchf", "cadjpy", "chfjpy",
+              "euraud", "eurcad", "eurchf", "eurgbp",
+              "eurjpy", "eurnzd", "eurusd", "gbpaud",
+              "gbpcad", "gbpchf", "gbpjpy", "gbpnzd",
+              "gbpusd", "nzdcad", "nzdchf", "nzdjpy",
+              "nzdusd", "usdcad", "usdchf", "usdjpy"]
+
+    # Define which pairs go to ''other'' subdirectory'
+    other_tickers: ["audnzd", "eurnzd", "gbpnzd", "nzdcad", "nzdchf", "nzdjpy"]
+
+  Metals:
+    source: "local"
+    frequencies: ["daily", "hourly"]
+    tickers: ["xagusd", "xauusd", "xpdusd", "xptusd"]
+
+  Yields:
+    source: "local"
+    frequencies: ["daily"]
+    tickers: ["10yauy.b", "10ycay.b", "10ychy.b", "10ydey.b",
+              "10yuky.b", "10yjpy.b", "10ynzy.b", "10yusy.b"]
+
+
+# ==============================================================================
+# DIRECTORY MAPPING (HOW TO LOCATE LOCAL FILES)
+#===============================================================================
+
+# Maps asset classes to their sub-directory structure'
+directory_map:
+  # Futures web scraped and saved on local disc for further extraction
+  Commodity_Futures:
+    # daily: "Scraped/futures"
+    daily:
+      stooq: "Scraped/futures"
+      investing: "Scraped/investing"
+
+  Currency_Futures:
+    # daily: "Scraped/futures"
+    daily:
+      stooq: "Scraped/futures"
+      investing: "Scraped/investing"
+
+  # Format: asset_class -> frequency -> subdirectory (relative to base path'
+  Currency_Indices:
+    daily: "Daily/data/daily/world/currencies/other"
+    hourly: "H1/data/hourly/world/currencies/other"
+
+  Currency_Pairs:
+    # Special case: some pairs are in ''other'', rest in ''major'''
+    daily:
+      other: "Daily/data/daily/world/currencies/other"
+      major: "Daily/data/daily/world/currencies/major"
+
+    hourly:
+      other: "H1/data/hourly/world/currencies/other"
+      major: "H1/data/hourly/world/currencies/major"
+
+  Metals:
+    daily: "Daily/data/daily/world/currencies/major"
+    hourly: "H1/data/hourly/world/currencies/major"
+
+  Yields:
+    daily: "Daily/data/daily/world/bonds"
+    # Note: No hourly data for Yields
+
+# ==============================================================================
+# DATA FORMAT CONFIGURATION
+# ==============================================================================
+
+data_format:
+  # Expected columns for each source type'
+  local_hourly: ["<DATE>", "<TIME>", "<OPEN>", "<HIGH>", "<LOW>", "<CLOSE>"]
+  local_daily: ["<DATE>", "<TIME>", "<OPEN>", "<HIGH>", "<LOW>", "<CLOSE>"]
+  stooq_daily: ["Date", "Open", "High", "Low", "Close", "Volume", "Open Interest"]
+  investing_daily: ["Date", "Price", "Open", "High", "Low", "Vol."]
+
+  # File extension for local data
+  file_extension: ".txt"
+  fut_extension: "_d.csv"
+
+  # Date format used across all sources
+  date_format: "%Y-%m-%d"
+  date_time_format: "%Y-%m-%d %H:%M:%S"
+
+  # Column name standardization (maps raw names to canonical names)
+  column_mapping:
+    daily:
+      "<DATE>": "date"
+      "<TIME>": "time"
+      "<OPEN>": "open"
+      "<HIGH>": "high"
+      "<LOW>": "low"
+      "<CLOSE>": "close"
+
+    hourly:
+      "<DATE>": "date"
+      "<TIME>": "time"
+      "<OPEN>": "open"
+      "<HIGH>": "high"
+      "<LOW>": "low"
+      "<CLOSE>": "close"
+
+    stooq:
+      "Date": "date_time"
+      "Open": "open"
+      "High": "high"
+      "Low": "low"
+      "Close": "close"
+      "Volume": "volume"
+      "Open Interest": "open_interest"
+
+    investing:
+      "Date": "date_time"
+      "Price": "close"
+      "Open": "open"
+      "High": "high"
+      "Low": "low"
+      "Vol.": "volume"
+
+# ==============================================================================
+# C.O.T REPORT DEFINITIONS'
+# ==============================================================================
+
+cot_report:
+  report_names:
+    fut_disagg: "fut_disagg_txt"
+    fut_fin: "fut_fin_txt"
+    legacy: "deacot"
+
+  output_folder: "cot"
+
+  cache_dir: "cot_cache"
+
+  cot_regex: "CFTC|conc|concentration|FutOnly|old|other|YYMMDD"
+
+  start_year: 2000
+
+  start_year_overrides:
+    fut_disagg_txt: 2010
+    fut_fin_txt: 2010
+
+# ==============================================================================
+# TRANSFORMATION CONFIGURATION
+# ==============================================================================
+
+transformation:
+  # aggregation rules
+  aggregation:
+    daily_to_quarterly: "quarter"   # Group by quarter
+    daily_to_monthly: "month"   # Group by month
+    daily_to_weekly: "week"   # Group by week
+    h1_to_daily: "day"  # Group by day
+    h1_to_h4: "4 hours"   # Group every 4 hours
+
+  # pip factor configuration to calculate
+  # candle pips movement
+  pip_factor:
+    # Regex to match tickers that get pip_factor 1000
+    regex_pattern: "jpy|_i|xau|xag|xpd|xpt|dx.f|\\.b$"
+    value_for_match: 0.001
+
+    # Explicitly state the default if no match
+    default_value: 0.00001
+
+# ==============================================================================
+# ANALYSIS CONFIGURATION
+# ==============================================================================
+
+analysis:
+  sessions:
+    # TIMEZONE STANDARDIZATION
+    # All session times below are in UTC to avoid confusion
+    timezone_standard: "UTC"
+
+    # Kill Zone Buffers (minutes before/after session start/end)
+    kill_zone_buffer_minutes: 30
+
+    # Session Definitions
+    # For each session, define both standard time and daylight saving
+    # time periods
+
+    # ASIAN SESSION (Tokyo/Japan reference)
+    asian:
+      name: "Asian Session"
+      start: "00:00:00"
+      end: "09:00:00"
+      # Asian markets don't observe DST consistently, so single time set
+      # is usually sufficient
+
+    # LONDON SESSION (UK Reference - observes BST/GMT)
+    london:
+      name: "London Session"
+      standard_time:
+        # GMT (Last Sunday October - Last Sunday March)
+        time_range: ['08:00:00', '17:00:00']
+        description: "GMT / Winter (BST off)"
+      daylight_time:
+        # BST (Last Sunday March - Last Sunday October)
+        time_range: ['07:00:00', '16:00:00']
+        description: "BST / Summer (BST on)"
+      dst_transition_dates:
+        start_dst: "last sunday of march"
+        end_dst: "last sunday of october"
+
+      # Kill Zones within London Session
+      kill_zones:
+        - name: "London Open"
+          start: "08:00:00"  # UTC
+          end: "11:00:00"    # UTC
+          priority: 1
+
+        - name: "London AM Continuation"
+          start: "11:00:00"
+          end: "14:00:00"
+          priority: 2
+
+    # NEW YORK SESSION (US Reference - observes EDT/EST)
+    newyork:
+      name: "New York Session"
+      standard_time:
+        # EST (First Sunday November - Second Sunday March)
+        time_range: ['13:00:00', '22:00:00']
+        description: "EST / Winter (DST off)"
+      daylight_time:
+        # EDT (Second Sunday March - First Sunday November)
+        time_range: ['12:00:00', '21:00:00']
+        description: "EDT / Summer (DST on)"
+      dst_transition_dates:
+        start_dst: "second sunday of march"
+        end_dst: "first sunday of november"
+
+      # Kill Zones within New York Session
+      kill_zones:
+        - name: "NY Open"
+          start: "13:00:00"  # UTC
+          end: "16:00:00"    # UTC
+          priority: 1
+
+        - name: "NY AM Continuation"
+          start: "16:00:00"
+          end: "19:00:00"
+          priority: 2
+
+    # OVERLAP PERIODS (High Volatility Windows)
+    overlaps:
+      london_ny:
+        name: "London-NY Overlap"
+        priority: 3
+        # Will be calculated dynamically based on active sessions
+
+      asian_london:
+        name: "Asian-London Overlap"
+        priority: 4
+        # Less significant overlap
+
+  trend_filter:
+    # --- Weekly Parameters ---
+    weekly:
+      lookback_period: 13
+
+    # --- daily Parameters ---
+    daily:
+      lookback_period: 21
+
+    # --- 4-hour Parameters ---
+    h4:
+      lookback_period: 12
+
+    # --- hourly Parameters ---
+    h1:
+      lookback_period: 12
+
+  swing_filter:
+    noise_filter: 0.92
+    sw_gap_bot: 0.20
+    sw_gap_top: 0.80
+    ob_filter: 0.618
+
+  choch_filter:
+    choch_quant: 0.618
+
+  signal_filter:
+    buffer_pipette: 50
+    min_confluence: 2
+    risk_pct: 0.02
+    upper_gap: 0.999
+    lower_gap: 0.764
+
+    # NEW – list of allowed bias_alignment names
+    allowed_alignments:
+      - "bull_candidate"
+      - "bear_candidate"
+
+    # NEW – optional minimum risk/reward ratio (NA = no filter)
+    min_risk_reward: 0.75
+
+    # NEW – if TRUE, daily overlap adds to signal_score (default FALSE)
+    score_daily_overlap: true
+
+  backtest:
+    max_holding_candles: ""   # or NA to disable time exits
+    trailing_stop:
+      trigger_pips: 900
+      step_pips: 300
+
+
+# ==============================================================================
+# PAPER TRADING (3 MONTHS MOCK TRADING TEST)
+# ==============================================================================
+
+paper_trading:
+  currency: "GBP"
+  starting_balance: 20.00
+  min_risk_pct: 1
+  max_risk_pct: 2
+  min_win_rate: 0.65
+  minimum_months: 4
+  start_date: "2026-08-31"
+
+# ==============================================================================
+# DATABASE CONFIGURATION (SQLITE SETTINGS)
+# ==============================================================================
+
+database:
+  db_dir: "/run/media/lekgoa/Book 3/Programming Projects/R-Projects/Databases"
+  db_suffix: ".sqlite"
+
+  # SQL table prefixes for different timeframes (e.g., "h1_audusd" for hourly)
+  table_prefixes:
+    market_data: "candles"
+    registry: "registry"
+    dol_table: "dol"
+    journal: "trading_journal"
+    paper_trade: "paper_trading"
+    cot: "cot_report"
+    reversal: "reversal_watch"
+
+  # Indexes to create for faster queries
+  index_column: ["date", "ticker"]
+
+  pragma:
+    journal_mode: "WAL"
+    synchronous: "NORMAL"
+
+  # Batch writing settings
+  # Rows per INSERT (reduces disk I/O)
+  batch_size: 5000
+
+  # Create database if it doesn't exist
+  create_if_not_exists: true
+
+# ==============================================================================
+# PIPELINE SETTINGS (Separate from logging)
+# ==============================================================================
+
+pipeline:
+  # Parallel processing
+  parallel:
+    enabled: true
+    max_workers: 4
+    chunk_size: 100  # Process in chunks of 100 tickers
+
+  # Caching
+  cache:
+    enabled: true
+    directory: "cache"
+    ttl_hours: 24  # Cache time-to-live
+
+  # Retry logic
+  retry:
+    max_attempts: 3
+    backoff_seconds: [1, 5, 10]  # Exponential backoff
+

@@ -1,0 +1,8 @@
+^renv$
+^renv\.lock$
+^forexdatasets\.Rproj$
+^\.Rproj\.user$
+^dev$
+^LICENSE\.md$
+^data-raw$
+^air\.toml$
