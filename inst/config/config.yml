@@ -286,7 +286,7 @@ transformation:
   # candle pips movement
   pip_factor:
     # Regex to match tickers that get pip_factor 1000
-    regex_pattern: "jpy|_i|xau|xag|xpd|xpt|dx.f|\\.b$"
+    regex_pattern: "jpy|_i|xau|xag|xpd|xpt|dx.f|cb.f|gc.f|pa.f|pl.f|si.f|\\.b$"
     value_for_match: 0.001
 
     # Explicitly state the default if no match
