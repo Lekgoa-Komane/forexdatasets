@@ -158,7 +158,7 @@ make_valid_config <- function() {
     transformation = list(
       missing_value_fill = 0,
       pip_factor = list(
-        regex_pattern = "jpy|xau|xag|xpd|xpt",
+        regex_pattern = "jpy|_i|xau|xag|xpd|xpt|dx.f|cb.f|gc.f|pa.f|pl.f|si.f|\\.b$",
         value_for_match = 0.001,
         default_value = 0.00001
       ),
