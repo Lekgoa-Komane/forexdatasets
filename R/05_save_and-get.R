@@ -172,6 +172,200 @@ save_cot_dataset <- function(cot_list, config) {
   invisible(unname(saved))
 }
 
+# get_cot_dataset ---------------------------------------------------------
+
+#' Read saved COT reports back, one report key or several
+#'
+#' The "serving window" for COT data. Reads the parquet files written by
+#' [save_cot_dataset()] and returns a single data.table. The file locations
+#' come from [build_cot_path()], the same "one map" the saver uses, so the
+#' two can never disagree.
+#'
+#' @param report_key One or more report keys, for example "legacy" or
+#'   "disaggregated". These are the names of the list returned by
+#'   [cot_pipeline()] and the file stems written by [save_cot_dataset()].
+#'   Default: every report file found in the COT folder.
+#' @param from,to Optional date limits on the report date column
+#'   (`Report_Date_as_YYYY_MM_DD`). Each can be a Date, a POSIXct, or text
+#'   such as "2024-01-31". Both ends are INCLUDED. A date without a time means
+#'   the start of that day (UTC).
+#' @param columns Optional. Names of the columns you want. `report_key` and
+#'   `Report_Date_as_YYYY_MM_DD` are always returned first, so every row can
+#'   be identified. Default: all columns.
+#' @param config The config list from [load_config()]. Pass it in when you
+#'   call this many times, so the config file is not read again each time.
+#'
+#' @return A data.table sorted by `report_key`, then the report date. It has
+#'   zero rows (not an error) when the filters leave nothing.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' get_cot_dataset()
+#' get_cot_dataset("legacy", from = "2024-01-01")
+#' get_cot_dataset(c("legacy", "disaggregated"),
+#'                 columns = c("noncommercial_positions_long_all"))
+#' }
+get_cot_dataset <- function(
+  report_key = NULL,
+  from = NULL,
+  to = NULL,
+  columns = NULL,
+  config = load_config()
+) {
+  # ---- 1. Check the arguments ----
+  check_text(report_key, "report_key")
+  check_text(columns, "columns")
+
+  from_utc <- as_utc_bound(from, "from")
+  to_utc <- as_utc_bound(to, "to")
+  if (!is.null(from_utc) && !is.null(to_utc) && from_utc > to_utc) {
+    stop("`from` is later than `to`.", call. = FALSE)
+  }
+
+  wanted_keys <- report_key
+
+  # ---- 2. Find the files via the one map ----
+  output_base <- config$paths$forexdataset$output_base
+  if (is.null(output_base)) {
+    stop("Config is missing `paths$forexdataset$output_base`.", call. = FALSE)
+  }
+  folder <- config$cot_report$output_folder
+  if (is.null(folder)) {
+    folder <- "cot"
+  }
+  cot_dir <- file.path(output_base, folder)
+
+  if (!dir.exists(cot_dir)) {
+    stop(
+      "No COT folder at: ",
+      cot_dir,
+      ". Is the drive connected, or has anything been saved yet?",
+      call. = FALSE
+    )
+  }
+
+  # Discover what is actually on the drive, so we can tell a typo from a
+  # report that simply has not been saved yet.
+  on_drive <- sub(
+    "\\.parquet$",
+    "",
+    list.files(cot_dir, pattern = "\\.parquet$", full.names = FALSE)
+  )
+
+  if (length(on_drive) == 0L) {
+    stop(
+      "No COT parquet files found in: ",
+      cot_dir,
+      call. = FALSE
+    )
+  }
+
+  if (!is.null(wanted_keys)) {
+    missing_keys <- setdiff(wanted_keys, on_drive)
+    if (length(missing_keys) > 0L) {
+      stop(
+        "No saved COT report(s) for: ",
+        paste(missing_keys, collapse = ", "),
+        ". Available: ",
+        paste(sort(on_drive), collapse = ", "),
+        ".",
+        call. = FALSE
+      )
+    }
+    keys <- wanted_keys
+  } else {
+    keys <- sort(on_drive)
+  }
+
+  # Build paths through the same helper the saver uses.
+  paths <- build_cot_path(config, keys)
+  names(paths) <- keys
+
+  # Every path must still exist (the drive could have changed since the
+  # listing above; this keeps the failure message specific).
+  absent <- keys[!file.exists(paths)]
+  if (length(absent) > 0L) {
+    stop(
+      "COT file(s) not found on disk: ",
+      paste(basename(paths[absent]), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  # ---- 3. Read them (any unreadable file stops the call) ----
+  date_col <- "Report_Date_as_YYYY_MM_DD"
+
+  read_cols <- if (!is.null(columns)) {
+    unique(c(date_col, columns))
+  } else {
+    NULL
+  }
+
+  tables <- lapply(keys, function(key) {
+    f <- paths[[key]]
+    tryCatch(
+      {
+        dt <- if (is.null(read_cols)) {
+          data.table::as.data.table(arrow::read_parquet(f))
+        } else {
+          data.table::as.data.table(arrow::read_parquet(
+            f,
+            col_select = tidyselect::all_of(read_cols)
+          ))
+        }
+        # Tag each row with the report it came from, first column.
+        dt[, report_key := key]
+        data.table::setcolorder(
+          dt,
+          c("report_key", setdiff(names(dt), "report_key"))
+        )
+        dt
+      },
+      error = function(e) {
+        stop(
+          "get_cot_dataset: could not read '",
+          basename(f),
+          "': ",
+          conditionMessage(e),
+          call. = FALSE
+        )
+      }
+    )
+  })
+
+  result <- data.table::rbindlist(tables, use.names = TRUE, fill = TRUE)
+
+  # ---- 4. Date limits and order ----
+  # The bound may be POSIXct (from as_utc_bound) while the column is Date;
+  # data.table compares them correctly, but we normalise to Date when the
+  # column is Date so the comparison is unambiguous.
+  if (inherits(result[[date_col]], "Date")) {
+    if (!is.null(from_utc)) {
+      from_utc <- as.Date(from_utc)
+    }
+    if (!is.null(to_utc)) to_utc <- as.Date(to_utc)
+  }
+
+  if (!is.null(from_utc)) {
+    result <- result[get(date_col) >= from_utc]
+  }
+  if (!is.null(to_utc)) {
+    result <- result[get(date_col) <= to_utc]
+  }
+
+  data.table::setorderv(result, c("report_key", date_col))
+
+  logger::log_info(paste0(
+    "get_cot_dataset: ",
+    nrow(result),
+    " row(s) from ",
+    length(keys),
+    " report(s)"
+  ))
+  result[]
+}
 
 # build_paths -------------------------------------------------------------
 
