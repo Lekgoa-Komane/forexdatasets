@@ -16,7 +16,7 @@ The pipeline follows a structured, modular ETL (Extract, Transform, Load) design
 2. **Extraction (`02_extract.R`)**: Handles multi-source data acquisition. Hourly records are loaded locally, while daily records dynamically route between local partitions or web scrapers (`chromote`/`polite`) depending on the designated data source.
 3. **Data Transformation & Update (`03_dataupadate.R`)**: Performs strict UTC date conversion, deduplication, anti-joins against existing parquet histories, and time-series aggregation (generating 4-hour, weekly, monthly, and quarterly candles).
 4. **CFTC COT Pipeline (`04_cot_report.R`)**: Automates the downloading, unpacking, standardizing, and caching of Commitments of Traders (COT) report archives from the CFTC.
-5. **Persistence & Access (`05_save_and-get.R`)**: Implements atomic write patterns (`.tmp` swap to prevent file corruption) using Apache Arrow Parquet files, alongside retrieval functions (`get_dataset`) featuring advanced filtering options.
+5. **Persistence & Access (`05_save_and-get.R` / `06_save_and_get.R`)**: Implements atomic write patterns (`.tmp` swap to prevent file corruption) using Apache Arrow Parquet files, alongside retrieval functions (`get_dataset` and `get_cot_dataset`) featuring advanced filtering options.
 
 ---
 
@@ -52,9 +52,10 @@ Data ingestion combines high-frequency local files with dynamic web extraction. 
 * `cot_pipeline(config)`: Downloads annual ZIP archives of Legacy, Disaggregated, and Traders in Financial Futures reports from the CFTC website.
 * `clean_cot_dataset(...)`: Sanitizes raw column headers, strips unwanted prefixes, and standardizes market exchange nomenclature across legacy formats.
 
-### 5. Storage & Serving Layer (`05_save_and-get.R`)
+### 5. Storage & Serving Layer (`05_save_and-get.R` / `06_save_and_get.R`)
 * `save_dataset(dt, config)` / `save_cot_dataset(cot_list, config)`: Implements atomic file writing by outputting data to temporary `.tmp` files before renaming them into place, guaranteeing resilience against system crashes or partial writes.
-* `get_dataset(...)`: Serves data back out of the parquet pantry with flexible filtering options (`ticker`, `asset_class`, `from`, `to`, `columns`).
+* `get_dataset(...)`: Serves OHLCV price data back out of the parquet pantry with flexible filtering options (`ticker`, `asset_class`, `from`, `to`, `columns`).
+* `get_cot_dataset(...)`: Serves saved Commitments of Traders (COT) parquet reports back out of the pantry, supporting single or multiple report keys (`report_key`), inclusive date range bounds (`from`, `to`), and column selection (`columns`).
 
 ---
 
@@ -72,6 +73,14 @@ Data ingestion combines high-frequency local files with dynamic web extraction. 
   * `rvest` (HTML parsing)
   * `chromote` (Headless browser automation)
   * `lubridate` (Date-time manipulation)
+  * `tidyselect` (Column selection helpers)
+
+### Special Installation Note (`polite`)
+The `polite` package has been archived on CRAN and cannot be installed directly via `install.packages("polite")`. Install it directly from GitHub using `renv`:
+
+```r
+renv::install("dmi3kno/polite")
+```
 
 ### Quick Start Example
 
@@ -92,7 +101,7 @@ updated_data <- update_daily_data(raw_data, config)
 # 4. Save processed data to the Parquet pantry
 save_dataset(updated_data, config)
 
-# 5. Retrieve data back from the pantry with date filtering
+# 5. Retrieve price data back from the pantry with date filtering
 eurusd_history <- get_dataset(
   timeframe = "daily",
   ticker = "EURUSD",
@@ -103,6 +112,15 @@ eurusd_history <- get_dataset(
 )
 
 head(eurusd_history)
+
+# 6. Retrieve saved CFTC COT reports from the pantry
+cot_legacy <- get_cot_dataset(
+  report_key = "legacy",
+  from = "2024-01-01",
+  config = config
+)
+
+head(cot_legacy)
 ```
 
 ---
