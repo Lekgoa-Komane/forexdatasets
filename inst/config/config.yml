@@ -409,6 +409,7 @@ analysis:
     sw_gap_bot: 0.20
     sw_gap_top: 0.80
     ob_filter: 0.618
+    obs: 4
 
   choch_filter:
     choch_quant: 0.618
