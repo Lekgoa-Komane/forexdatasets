@@ -213,7 +213,7 @@ extract_daily_data <- function(
       source_path,
       config
     ))
-  } else if (data_source %in% c("investing", "stooq")) {
+  } else if (data_source == "stooq") {
     return(web_scraper(
       ticker,
       asset_class,
@@ -432,12 +432,12 @@ extract_local_daily <- function(
 #' Scrape daily data from a web source
 #'
 #' Uses a headless Chromote session with a polite user agent to retrieve
-#' daily data from stooq or investing.com. Respects robots.txt, extracts the
-#' HTML table, and saves the raw data to a local CSV file for future use.
+#' daily data from stooq. Respects robots.txt, extracts the HTML table,
+#' and saves the raw data to a local CSV file for future use.
 #'
 #' @param ticker Character string. Ticker symbol.
 #' @param asset_class Character string. Asset class (e.g., `"Commodity_Futures"`).
-#' @param data_source Character string. Either `"stooq"` or `"investing"`.
+#' @param data_source Character string. Source name (e.g., `"stooq"`).
 #' @param url_path Character string. The full URL to scrape.
 #' @param config A validated configuration list.
 #'
@@ -459,17 +459,7 @@ web_scraper <- function(ticker, asset_class, data_source, url_path, config) {
     url = url_path
   )
 
-  col_names <- switch(
-    data_source,
-    "stooq" = config$data_format$stooq_daily,
-    "investing" = config$data_format$investing_daily
-  )
-
-  css <- switch(
-    data_source,
-    "stooq" = config$web[[data_source]]$table_id,
-    "investing" = config$web[[data_source]]$table_id
-  )
+  css <- config$web[[data_source]]$table_id
 
   # 1. Prepare File Path
   file_path <- file.path(

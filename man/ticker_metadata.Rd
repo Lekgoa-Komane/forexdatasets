@@ -17,9 +17,9 @@ A \code{data.table} with columns:
 }
 \description{
 Constructs a data.table of ticker combinations for every asset class
-defined in the configuration. The function expands frequencies, sources
-(including local, stooq, and investing), subdirectory mappings, and
-generates source paths for each record.
+defined in the configuration. The function expands frequencies,
+sources (including local and stooq), subdirectory mappings, and generates
+source paths for each record.
 }
 \details{
 The resulting data.table contains one row per unique
@@ -31,7 +31,7 @@ Special handling includes:
 \itemize{
 \item Currency pairs are split into major/other types using the
 \code{other_tickers} field from config.
-\item Futures assets can have multiple sources (local, stooq, investing)
+\item Futures assets can have multiple sources (local, stooq)
 and are expanded accordingly.
 \item URL patterns are validated to contain a \code{{ticker}} placeholder.
 }

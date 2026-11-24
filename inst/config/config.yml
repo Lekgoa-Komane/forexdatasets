@@ -1,6 +1,6 @@
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # CONFIGURATION FOR DATA EXTRACTION, TRANSFOMATION & LOADING PIPELINE
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 default:
   # Project Name
@@ -9,9 +9,9 @@ default:
   # Environment: "dev", "test", "prod"
   environment: "dev"
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # PATH CONFIGURATION
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 paths:
   # Local storage base directories (use absolute paths for reliability)
@@ -46,9 +46,9 @@ paths:
 
   subfolder: "csv"
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # WEB SCRAPING CONFIGURATION'
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 web:
   stooq:
@@ -63,12 +63,6 @@ web:
     - "Googlebot"
     - "Bingbot"
 
-  investing:
-    base_url: "https://www.investing.com"
-    url_pattern: "https://www.investing.com/{asset_class}/{ticker}-historical-data"
-    x_path: "//*[@id='__next']/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/table"
-    table_id: "table.freeze-column-w-1.w-full.overflow-x-auto.text-xs.leading-4"
-
   cftc:
     url: "https://www.cftc.gov/files/dea/history/"
 
@@ -80,9 +74,9 @@ web:
 
   poll_interval: 0.5
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # ASSET CLASS DEFINITIONS'
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 asset_classes:
   # List all asset classes'
@@ -95,29 +89,14 @@ asset_classes:
     - "Yields"
 
   Commodity_Futures:
-    source: ["stooq", "investing", "local"]
+    source: ["stooq", "local"]
     frequencies: ["daily"]
     tickers: ["cb.f", "gc.f", "pa.f", "pl.f", "si.f"]
-    investing_tickers:
-     - "brent-oil"
-     - "gold"
-     - "palladium"
-     - "platinum"
-     - "silver"
 
   Currency_Futures:
-    source: ["stooq", "investing", "local"]
+    source: ["stooq", "local"]
     frequencies: ["daily"]
     tickers: ["a6.f", "b6.f", "d6.f", "dx.f", "e6.f", "j6.f", "n6.f", "s6.f"]
-    investing_tickers:
-     - "aud-futures"
-     - "gbp-futures"
-     - "cad-futures"
-     - "us-dollar-index"
-     - "eur-futures"
-     - "jpy-futures"
-     - "new-zealand-dollar-futures"
-     - "chf-futures"
 
   Currency_Indices:
     source: "local"
@@ -151,9 +130,9 @@ asset_classes:
               "10yuky.b", "10yjpy.b", "10ynzy.b", "10yusy.b"]
 
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # DIRECTORY MAPPING (HOW TO LOCATE LOCAL FILES)
-#===============================================================================
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>=
 
 # Maps asset classes to their sub-directory structure'
 directory_map:
@@ -161,14 +140,12 @@ directory_map:
   Commodity_Futures:
     # daily: "Scraped/futures"
     daily:
-      stooq: "Scraped/futures"
-      investing: "Scraped/investing"
+      stooq: "Scraped/Commodity_Futures"
 
   Currency_Futures:
     # daily: "Scraped/futures"
     daily:
-      stooq: "Scraped/futures"
-      investing: "Scraped/investing"
+      stooq: "Scraped/Currency_Futures"
 
   # Format: asset_class -> frequency -> subdirectory (relative to base path'
   Currency_Indices:
@@ -193,16 +170,15 @@ directory_map:
     daily: "Daily/data/daily/world/bonds"
     # Note: No hourly data for Yields
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # DATA FORMAT CONFIGURATION
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 data_format:
   # Expected columns for each source type'
   local_hourly: ["<DATE>", "<TIME>", "<OPEN>", "<HIGH>", "<LOW>", "<CLOSE>"]
   local_daily: ["<DATE>", "<TIME>", "<OPEN>", "<HIGH>", "<LOW>", "<CLOSE>"]
   stooq_daily: ["Date", "Open", "High", "Low", "Close", "Volume", "Open Interest"]
-  investing_daily: ["Date", "Price", "Open", "High", "Low", "Vol."]
 
   # File extension for local data
   file_extension: ".txt"
@@ -239,17 +215,9 @@ data_format:
       "Volume": "volume"
       "Open Interest": "open_interest"
 
-    investing:
-      "Date": "date_time"
-      "Price": "close"
-      "Open": "open"
-      "High": "high"
-      "Low": "low"
-      "Vol.": "volume"
-
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # C.O.T REPORT DEFINITIONS'
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 cot_report:
   report_names:
@@ -266,12 +234,12 @@ cot_report:
   start_year: 2000
 
   start_year_overrides:
-    fut_disagg_txt: 2010
-    fut_fin_txt: 2010
+    fut_disagg: 2010
+    fut_fin: 2010
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # TRANSFORMATION CONFIGURATION
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 transformation:
   # aggregation rules
@@ -292,9 +260,9 @@ transformation:
     # Explicitly state the default if no match
     default_value: 0.00001
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # ANALYSIS CONFIGURATION
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 analysis:
   sessions:
@@ -419,7 +387,7 @@ analysis:
     min_confluence: 2
     risk_pct: 0.02
     upper_gap: 0.999
-    lower_gap: 0.764
+    lower_gap: 0.500
 
     # NEW – list of allowed bias_alignment names
     allowed_alignments:
@@ -439,9 +407,9 @@ analysis:
       step_pips: 300
 
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # PAPER TRADING (3 MONTHS MOCK TRADING TEST)
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 paper_trading:
   currency: "GBP"
@@ -452,9 +420,9 @@ paper_trading:
   minimum_months: 4
   start_date: "2026-08-31"
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # DATABASE CONFIGURATION (SQLITE SETTINGS)
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 database:
   db_suffix: ".sqlite"
@@ -478,9 +446,9 @@ database:
   # Create database if it doesn't exist
   create_if_not_exists: true
 
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # PIPELINE SETTINGS (Separate from logging)
-# ==============================================================================
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 pipeline:
   # Parallel processing
@@ -499,4 +467,6 @@ pipeline:
   retry:
     max_attempts: 3
     backoff_seconds: [1, 5, 10]  # Exponential backoff
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

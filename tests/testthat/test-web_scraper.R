@@ -15,14 +15,18 @@ scraper_config <- function(folder = "stooq") {
   config$web$poll_interval <- 0.01
   if (!is.null(folder)) {
     dir.create(
-      file.path(config$paths$local_base, folder),
-      recursive = TRUE, showWarnings = FALSE
+      file.path(
+        config$paths$local_base,
+        config$directory_map$Commodity_Futures$daily[[folder]]
+      ),
+      recursive = TRUE,
+      showWarnings = FALSE
     )
   }
   config
 }
 
-run_scraper <- function(config, data_source = "stooq", ticker = "GC.F") {
+run_scraper <- function(config, data_source = "stooq", ticker = "gc.f") {
   web_scraper(
     ticker = ticker,
     asset_class = "Commodity_Futures",
@@ -43,32 +47,16 @@ test_that("web_scraper returns the scraped table, saves it, and closes the brows
   expect_equal(nrow(result), 2)
   expect_equal(names(result), c("Date", "Close"))
 
-  saved <- file.path(config$paths$local_base, "stooq", "GC.F.csv")
+  saved <- file.path(
+    config$paths$local_base,
+    config$directory_map$Commodity_Futures$daily[["stooq"]],
+    "gc.f_d.csv"
+  )
   expect_true(file.exists(saved))
   expect_equal(nrow(data.table::fread(saved)), 2)
 
   expect_equal(state$navigated, "https://example.com/data")
   expect_equal(state$closed, 1L)
-})
-
-test_that("web_scraper works for the investing source too", {
-  config <- scraper_config(folder = "investing")
-  # web_scraper picks the 1st (stooq) and 3rd (investing) settings by POSITION,
-  # so put a cftc entry in 2nd place, as your real config has.
-  config$web <- append(
-    config$web,
-    list(cftc = list(url = "https://example.com/cftc/")),
-    after = 1
-  )
-  mock_scraper_guards(allowed = TRUE)
-  fake_chromote()
-
-  result <- run_scraper(config, data_source = "investing", ticker = "gold")
-
-  expect_equal(nrow(result), 2)
-  expect_true(file.exists(
-    file.path(config$paths$local_base, "investing", "gold.csv")
-  ))
 })
 
 test_that("web_scraper does not start the browser when robots.txt disallows the site", {

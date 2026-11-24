@@ -12,6 +12,10 @@ make_valid_config <- function() {
   dir.create(db_dir, recursive = TRUE)
 
   list(
+    default = list(
+      project_name = "Data ETL Pipeline",
+      environment = "dev"
+    ),
     paths = list(
       local_base = local_base,
       forexengine = list(
@@ -41,19 +45,18 @@ make_valid_config <- function() {
     web = list(
       stooq = list(
         base_url = "https://stooq.com",
-        url_pattern = "https://stooq.com/q/d/l/?s={ticker}&i=d",
+        polite_path = "/q/d/?s=",
+        url_pattern = "https://stooq.com/q/d/?s={ticker}",
         table_id = "#f13",
         x_path = "//table"
       ),
-      investing = list(
-        base_url = "https://www.investing.com",
-        url_pattern = "https://www.investing.com/{asset_class}/{ticker}-historical-data",
-        table_id = "#curr_table",
-        x_path = "//table"
+      cftc = list(
+        url = "https://www.cftc.gov/files/dea/history/"
       ),
-      user_agent = c("Googlebot"),
+      user_agent = c("Googlebot", "Bingbot"),
       delay_between_requests = 2,
-      timeout = 30
+      timeout = 30,
+      poll_interval = 0.5
     ),
     asset_classes = list(
       names = c("Currency_Pairs", "Commodity_Futures"),
@@ -64,10 +67,9 @@ make_valid_config <- function() {
         other_tickers = c("gbpjpy")
       ),
       Commodity_Futures = list(
-        source = c("local", "stooq", "investing"),
+        source = c("local", "stooq"),
         frequencies = "daily",
-        tickers = c("GC.F", "SI.F"),
-        investing_tickers = c("gold", "silver")
+        tickers = c("gc.f", "si.f")
       )
     ),
     directory_map = list(
@@ -76,7 +78,7 @@ make_valid_config <- function() {
         hourly = list(major = "major", other = "other")
       ),
       Commodity_Futures = list(
-        daily = list(stooq = "stooq", investing = "investing")
+        daily = list(stooq = "Scraped/Commodity_Futures")
       )
     ),
     data_format = list(
@@ -91,17 +93,8 @@ make_valid_config <- function() {
         "Volume",
         "Open Interest"
       ),
-      investing_daily = c(
-        "Date",
-        "Price",
-        "Open",
-        "High",
-        "Low",
-        "Vol.",
-        "Change %"
-      ),
       file_extension = ".csv",
-      fut_extension = ".csv",
+      fut_extension = "_d.csv",
       date_format = "%Y%m%d",
       date_time_format = "%Y%m%d%H%M%S",
       column_mapping = list(
@@ -129,15 +122,6 @@ make_valid_config <- function() {
           Close = "close",
           Volume = "volume",
           `Open Interest` = "open_interest"
-        ),
-        investing = list(
-          Date = "date_time",
-          Price = "close",
-          Open = "open",
-          High = "high",
-          Low = "low",
-          `Vol.` = "volume",
-          `Change %` = "change_pct"
         )
       )
     ),
@@ -147,12 +131,13 @@ make_valid_config <- function() {
         fut_fin = "fut_fin_txt",
         legacy = "deacot"
       ),
+      output_folder = "cot",
       cache_dir = "cot_cache",
       cot_regex = "CFTC|conc|concentration|FutOnly|old|other|YYMMDD",
-      start_year = 2025,
+      start_year = 2000,
       start_year_overrides = list(
-        fut_disagg_txt = 2026,
-        fut_fin_txt = 2026
+        fut_disagg = 2010,
+        fut_fin = 2010
       )
     ),
     transformation = list(
@@ -171,48 +156,106 @@ make_valid_config <- function() {
       )
     ),
     analysis = list(
-      trend_filter = list(
-        weekly = list(lookback_period = 12L),
-        daily = list(lookback_period = 30L),
-        h4 = list(lookback_period = 13L),
-        h1 = list(lookback_period = 21L),
-        signal_filter = list(
-          lower_gap = 0.500,
-          upper_gap = 0.999,
-          min_confluence = 1,
-          risk_pct = 0.01,
-          buffer_pipette = 0.5,
-          min_risk_reward = 1.5
+      sessions = list(
+        timezone_standard = "UTC",
+        kill_zone_buffer_minutes = 30L,
+        asian = list(
+          name = "Asian Session",
+          start = "00:00:00",
+          end = "09:00:00"
+        ),
+        london = list(
+          name = "London Session",
+          standard_time = list(start = "08:00:00", end = "17:00:00"),
+          daylight_time = list(start = "07:00:00", end = "16:00:00"),
+          dst_transition_dates = list(
+            start_dst = "last sunday of march",
+            end_dst = "last sunday of october"
+          ),
+          kill_zones = list(
+            london_open = list(
+              start = "08:00:00",
+              end = "11:00:00",
+              priority = 1L
+            )
+          )
+        ),
+        newyork = list(
+          name = "New York Session",
+          standard_time = list(start = "13:00:00", end = "22:00:00"),
+          daylight_time = list(start = "12:00:00", end = "21:00:00"),
+          dst_transition_dates = list(
+            start_dst = "second sunday of march",
+            end_dst = "first sunday of november"
+          ),
+          kill_zones = list(
+            ny_open = list(start = "13:00:00", end = "16:00:00", priority = 1L)
+          )
+        ),
+        overlaps = list(
+          london_ny = list(name = "London-NY Overlap", priority = 3L),
+          asian_london = list(name = "Asian-London Overlap", priority = 4L)
         )
+      ),
+      trend_filter = list(
+        weekly = list(lookback_period = 13L),
+        daily = list(lookback_period = 21L),
+        h4 = list(lookback_period = 12L),
+        h1 = list(lookback_period = 12L)
       ),
       swing_filter = list(
         noise_filter = 0.92,
-        sw_gap_bot = 0.25,
-        sw_gap_top = 0.75,
-        ob_filter = 0.618
+        sw_gap_bot = 0.20,
+        sw_gap_top = 0.80,
+        ob_filter = 0.618,
+        obs = 4L
       ),
       choch_filter = list(choch_quant = 0.618),
-      sessions = list(
-        asian = list(start = "00:00", end = "08:00"),
-        london = list(
-          standard_time = list(time_range = c("08:00", "16:00")),
-          daylight_time = list(time_range = c("07:00", "15:00")),
-          kill_zones = list(list(start = "08:00", end = "11:00"))
-        ),
-        newyork = list(
-          standard_time = list(time_range = c("13:00", "21:00")),
-          daylight_time = list(time_range = c("12:00", "20:00")),
-          kill_zones = list(list(start = "13:00", end = "16:00"))
+      signal_filter = list(
+        buffer_pipette = 50L,
+        min_confluence = 2L,
+        risk_pct = 0.02,
+        lower_gap = 0.500,
+        upper_gap = 0.999,
+        allowed_alignments = c("bull_candidate", "bear_candidate"),
+        min_risk_reward = 0.75,
+        score_daily_overlap = TRUE
+      ),
+      backtest = list(
+        max_holding_candles = "",
+        trailing_stop = list(
+          trigger_pips = 900L,
+          step_pips = 300L
         )
       )
+    ),
+    paper_trading = list(
+      currency = "GBP",
+      starting_balance = 20.00,
+      min_risk_pct = 1,
+      max_risk_pct = 2,
+      min_win_rate = 0.65,
+      minimum_months = 4L,
+      start_date = "2026-08-31"
     ),
     database = list(
       db_suffix = ".sqlite",
       table_prefixes = list(
         journal = "trading_journal",
         paper_trade = "paper_trading"
-      )
+      ),
+      index_column = c("date", "ticker"),
+      pragma = list(
+        journal_mode = "WAL",
+        synchronous = "NORMAL"
+      ),
+      batch_size = 5000L,
+      create_if_not_exists = TRUE
     ),
-    pipeline = list()
+    pipeline = list(
+      parallel = list(enabled = TRUE, max_workers = 4L, chunk_size = 100L),
+      cache = list(enabled = TRUE, directory = "cache", ttl_hours = 24L),
+      retry = list(max_attempts = 3L, backoff_seconds = c(1L, 5L, 10L))
+    )
   )
 }
