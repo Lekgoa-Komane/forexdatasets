@@ -15,8 +15,9 @@
 #'   Defaults to `system.file("config", "config.yml", package = "forexdatasets")`.
 #'
 #' @return A named list containing the validated configuration. The list
-#'   includes sections for `paths`, `web`, `asset_classes`, `directory_map`,
-#'   `data_format`, `transformation`, `analysis`, `database`, and `pipeline`.
+#'   includes sections for `defaults`, `paths`, `web`, `asset_classes`,
+#'   `directory_map`, `data_format`, `cot_report`, `transformation`, `analysis`,
+#'    `paper_trading`, `database`, and `pipeline`.
 #'
 #' @importFrom fs file_exists dir_exists
 #' @importFrom yaml read_yaml
@@ -100,7 +101,8 @@ load_config <- function(
     "transformation",
     "analysis",
     "paper_trading",
-    "database"
+    "database",
+    "pipeline"
   )
   # NOTE: "pipeline" is optional to preserve compatibility with minimal test fixtures,
   #       but validated when present.
@@ -181,7 +183,10 @@ load_config <- function(
   if (!setequal(ff, fs)) {
     log_error("frequency_folders and file_suffixes must have identical keys")
     stop(sprintf(
-      "frequency_folders/file_suffixes key mismatch. Only in folders: [%s]; only in suffixes: [%s]",
+      paste0(
+        "frequency_folders/file_suffixes key mismatch. ",
+        "Only in folders: [%s]; only in suffixes: [%s]"
+      ),
       paste(setdiff(ff, fs), collapse = ", "),
       paste(setdiff(fs, ff), collapse = ", ")
     ))
