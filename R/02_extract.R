@@ -271,7 +271,7 @@ extract_local_daily <- function(
           file_path,
           header = TRUE,
           select = config$data_format$stooq_daily
-        )[!(open == high & high == low & low == close)]
+        )
 
         # Validate columns
         expected_cols <- config$data_format$stooq_daily
@@ -341,7 +341,7 @@ extract_local_daily <- function(
           file_path,
           header = TRUE,
           select = config$data_format$local_daily
-        )
+        )[!(open == high & high == low & low == close)]
 
         # Validate columns
         expected_cols <- config$data_format$local_daily
