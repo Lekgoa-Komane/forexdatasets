@@ -548,7 +548,7 @@ update_daily_data <- function(
             # READ THE FILE (only if it exists) ───────────────
             dt <- data.table::as.data.table(
               arrow::read_parquet(file_path)
-            )[!(open == high & high == low & low == close)]
+            )
 
             dt
           }

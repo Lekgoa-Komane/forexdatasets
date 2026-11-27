@@ -120,7 +120,9 @@ find_old_csv_files <- function(config, tf_key, old_base) {
 # NOTE: the arguments are called ac / tk / tf (not asset_class / ticker /
 # timeframe) because inside data.table a COLUMN with the same name would win.
 read_old_csv <- function(csv_path, ac, tk, tf) {
-  dt <- data.table::fread(csv_path, stringsAsFactors = FALSE)
+  dt <- data.table::fread(csv_path, stringsAsFactors = FALSE)[
+    !(open == high & high == low & low == close)
+  ]
 
   dt <- if (tf == "h1") {
     dt[,

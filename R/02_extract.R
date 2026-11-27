@@ -271,7 +271,7 @@ extract_local_daily <- function(
           file_path,
           header = TRUE,
           select = config$data_format$stooq_daily
-        )
+        )[!(open == high & high == low & low == close)]
 
         # Validate columns
         expected_cols <- config$data_format$stooq_daily
@@ -324,8 +324,6 @@ extract_local_daily <- function(
         )]
 
         setorder(dt, date_time)
-
-        dt <- dt[!(open == high & high == low & low == close)]
 
         log_info(
           "Loaded {ticker} (local): {n} rows",
