@@ -14,8 +14,9 @@ Defaults to \code{system.file("config", "config.yml", package = "forexdatasets")
 }
 \value{
 A named list containing the validated configuration. The list
-includes sections for \code{paths}, \code{web}, \code{asset_classes}, \code{directory_map},
-\code{data_format}, \code{transformation}, \code{analysis}, \code{database}, and \code{pipeline}.
+includes sections for \code{defaults}, \code{paths}, \code{web}, \code{asset_classes},
+\code{directory_map}, \code{data_format}, \code{cot_report}, \code{transformation}, \code{analysis},
+\code{paper_trading}, \code{database}, and \code{pipeline}.
 }
 \description{
 Reads a YAML configuration file, validates all critical sections and
