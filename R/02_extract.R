@@ -325,7 +325,8 @@ extract_local_daily <- function(
 
         setorder(dt, date_time)
 
-        dt <- dt[date_time >= as.POSIXct("1985-01-01", tz = "UTC")]
+        # dt <- dt[date_time >= as.POSIXct("1985-01-01", tz = "UTC")]
+        # dt <- dt[!(open == high & high == low & low == close)]
 
         log_info(
           "Loaded {ticker} (local): {n} rows",
