@@ -766,6 +766,8 @@ update_daily_data <- function(
     )
   )
 
+  full_data <- full_data[!(open == high & high == low & low == close)]
+
   # Force UTC timezone attribute preservation
   data.table::setattr(full_data$date_time, "tzone", "UTC")
 
