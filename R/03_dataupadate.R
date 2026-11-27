@@ -548,7 +548,7 @@ update_daily_data <- function(
             # READ THE FILE (only if it exists) ───────────────
             dt <- data.table::as.data.table(
               arrow::read_parquet(file_path)
-            )
+            )[!(open == high & high == low & low == close)]
 
             dt
           }
@@ -765,8 +765,6 @@ update_daily_data <- function(
       "date_time"
     )
   )
-
-  full_data <- full_data[!(open == high & high == low & low == close)]
 
   # Force UTC timezone attribute preservation
   data.table::setattr(full_data$date_time, "tzone", "UTC")
