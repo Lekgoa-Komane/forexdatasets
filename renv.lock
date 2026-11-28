@@ -552,7 +552,7 @@
     },
     "curl": {
       "Package": "curl",
-      "Version": "8.1.0",
+      "Version": "8.2.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "A Modern and Flexible Web Client for R",
@@ -2244,7 +2244,7 @@
     },
     "selectr": {
       "Package": "selectr",
-      "Version": "0.8-0",
+      "Version": "0.8-1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Translate CSS Selectors to XPath Expressions",

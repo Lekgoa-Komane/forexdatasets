@@ -372,7 +372,6 @@ extract_local_daily <- function(
         )
 
         # Add metadata
-        dt <- dt[!(open == high & high == low & low == close)]
         dt[, `:=`(
           date_time = as.POSIXct(
             sprintf("%s%06d", date, time),
