@@ -387,8 +387,6 @@ extract_local_daily <- function(
 
         setorder(dt, date_time)
 
-        dt <- dt[date_time >= as.POSIXct("1985-01-01", tz = "UTC")]
-
         dt <- dt[, .(
           date_time,
           open,
