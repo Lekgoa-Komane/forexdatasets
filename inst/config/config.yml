@@ -83,7 +83,6 @@ asset_classes:
   names:
     - "Commodity_Futures"
     - "Currency_Futures"
-    - "Currency_Indices"
     - "Currency_Pairs"
     - "Metals"
 
@@ -96,12 +95,6 @@ asset_classes:
     source: ["stooq", "local"]
     frequencies: ["daily"]
     tickers: ["a6.f", "b6.f", "d6.f", "dx.f", "e6.f", "j6.f", "n6.f", "s6.f"]
-
-  Currency_Indices:
-    source: "local"
-    frequencies: ["daily", "hourly"]
-    tickers: ["aud_i", "cad_i", "chf_i", "eur_i",
-              "gbp_i", "jpy_i", "nzd_i", "usd_i"]
 
   Currency_Pairs:
     source: "local"
@@ -140,10 +133,6 @@ directory_map:
       stooq: "Scraped/Currency_Futures"
 
   # Format: asset_class -> frequency -> subdirectory (relative to base path'
-  Currency_Indices:
-    daily: "Daily/data/daily/world/currencies/other"
-    hourly: "H1/data/hourly/world/currencies/other"
-
   Currency_Pairs:
     # Special case: some pairs are in ''other'', rest in ''major'''
     daily:
