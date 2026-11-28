@@ -86,7 +86,6 @@ asset_classes:
     - "Currency_Indices"
     - "Currency_Pairs"
     - "Metals"
-    - "Yields"
 
   Commodity_Futures:
     source: ["stooq", "local"]
@@ -123,13 +122,6 @@ asset_classes:
     frequencies: ["daily", "hourly"]
     tickers: ["xagusd", "xauusd", "xpdusd", "xptusd"]
 
-  Yields:
-    source: "local"
-    frequencies: ["daily"]
-    tickers: ["10yauy.b", "10ycay.b", "10ychy.b", "10ydey.b",
-              "10yuky.b", "10yjpy.b", "10ynzy.b", "10yusy.b"]
-
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # DIRECTORY MAPPING (HOW TO LOCATE LOCAL FILES)
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>=
@@ -165,10 +157,6 @@ directory_map:
   Metals:
     daily: "Daily/data/daily/world/currencies/major"
     hourly: "H1/data/hourly/world/currencies/major"
-
-  Yields:
-    daily: "Daily/data/daily/world/bonds"
-    # Note: No hourly data for Yields
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # DATA FORMAT CONFIGURATION
